@@ -1,0 +1,265 @@
+{% extends 'base.html' %}
+
+{% block title %}تحويل الأموال — WaqaaBank{% endblock %}
+
+{% block extra_css %}
+.transfer-layout {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 24px;
+  align-items: start;
+}
+.step-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 28px;
+}
+.step {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.step.active { color: var(--navy); font-weight: 600; }
+.step-num {
+  width: 26px; height: 26px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 700;
+  background: var(--border);
+  color: var(--muted);
+}
+.step.active .step-num {
+  background: var(--navy);
+  color: #fff;
+}
+.step-divider {
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 14px;
+}
+.info-row:last-child { border-bottom: none; }
+.info-row-label { color: var(--muted); }
+.info-row-value { font-weight: 500; color: var(--navy); }
+
+.limit-bar-wrap {
+  background: var(--bg);
+  border-radius: 6px;
+  height: 6px;
+  overflow: hidden;
+  margin-top: 8px;
+}
+.limit-bar-fill {
+  height: 100%;
+  background: var(--teal);
+  border-radius: 6px;
+  transition: width 0.3s;
+}
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">تحويل الأموال</h1>
+    <p class="page-subtitle">أرسل أموالاً إلى أي حساب بكل سهولة وأمان</p>
+  </div>
+  <a href="{% url 'dashboard' %}" class="btn btn-ghost">
+    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+      <path d="M19 12H5M12 5l-7 7 7 7" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    العودة
+  </a>
+</div>
+
+<div class="transfer-layout">
+
+  <!-- ── نموذج التحويل ── -->
+  <div class="card">
+    <div class="step-indicator">
+      <div class="step active">
+        <div class="step-num">1</div>
+        تفاصيل التحويل
+      </div>
+      <div class="step-divider"></div>
+      <div class="step">
+        <div class="step-num">2</div>
+        التحقق
+      </div>
+      <div class="step-divider"></div>
+      <div class="step">
+        <div class="step-num">3</div>
+        تأكيد
+      </div>
+    </div>
+
+    {% if error %}
+      <div class="alert alert-danger">
+        <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/>
+          <path d="M12 8v4M12 16h.01" stroke-linecap="round"/>
+        </svg>
+        {{ error }}
+      </div>
+    {% endif %}
+
+    <form method="post" id="transfer-form">
+      {% csrf_token %}
+
+      <div class="form-group">
+        <label class="form-label" for="from_account">الحساب المُرسِل</label>
+        <select id="from_account" name="from_account" class="form-control" required onchange="updateLimits(this)">
+          <option value="">— اختر الحساب —</option>
+          {% for account in accounts %}
+            <option value="{{ account.id }}"
+              data-balance="{{ account.balance }}"
+              data-daily-limit="{{ account.daily_limit }}"
+              data-daily-spent="{{ account.daily_spent }}"
+              data-single-limit="{{ account.single_limit }}"
+              data-currency="{{ account.currency }}">
+              {% if account.account_type == 'checking' %}جاري{% elif account.account_type == 'savings' %}ادخاري{% else %}استثماري{% endif %}
+              — {{ account.account_number }} ({{ account.balance|floatformat:2 }} {{ account.currency }})
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- معلومات الحساب المختار -->
+      <div id="account-info" style="display: none; margin-bottom: 20px;">
+        <div style="background: var(--bg); border-radius: 12px; padding: 14px 16px;">
+          <div class="flex justify-between" style="font-size: 13px; color: var(--muted); margin-bottom: 6px;">
+            <span>الرصيد المتاح</span>
+            <span id="info-balance" class="fw-bold text-navy"></span>
+          </div>
+          <div class="flex justify-between" style="font-size: 13px; color: var(--muted); margin-bottom: 4px;">
+            <span>المستخدم اليوم</span>
+            <span id="info-spent"></span>
+          </div>
+          <div style="font-size: 12px; color: var(--muted); margin-bottom: 6px; text-align: left;" id="info-limit-text"></div>
+          <div class="limit-bar-wrap">
+            <div class="limit-bar-fill" id="limit-bar" style="width: 0%"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="to_account_number">رقم الحساب المستلم</label>
+        <input
+          type="text"
+          id="to_account_number"
+          name="to_account_number"
+          class="form-control"
+          placeholder="أدخل رقم الحساب"
+          required
+        />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="amount">المبلغ (ريال سعودي)</label>
+        <input
+          type="number"
+          id="amount"
+          name="amount"
+          class="form-control"
+          placeholder="0.00"
+          step="0.01"
+          min="1"
+          required
+        />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="description">الملاحظة (اختياري)</label>
+        <input
+          type="text"
+          id="description"
+          name="description"
+          class="form-control"
+          placeholder="سبب التحويل..."
+          maxlength="200"
+        />
+      </div>
+
+      <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 13px;">
+        <svg width="17" height="17" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path d="M5 12h14M15 7l5 5-5 5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        متابعة التحويل
+      </button>
+    </form>
+  </div>
+
+  <!-- ── الجانب الأيمن: ملاحظات ── -->
+  <div style="display: flex; flex-direction: column; gap: 16px;">
+
+    <div class="card">
+      <h3 class="card-title mb-2">تعليمات التحويل</h3>
+      <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 12px;">
+        <div class="info-row">
+          <span class="info-row-label">الحد الأقصى للعملية</span>
+          <span class="info-row-value" id="side-single-limit">—</span>
+        </div>
+        <div class="info-row">
+          <span class="info-row-label">الحد اليومي</span>
+          <span class="info-row-value" id="side-daily-limit">—</span>
+        </div>
+        <div class="info-row">
+          <span class="info-row-label">وقت التنفيذ</span>
+          <span class="info-row-value">فوري</span>
+        </div>
+        <div class="info-row">
+          <span class="info-row-label">رسوم التحويل</span>
+          <span class="info-row-value text-teal">مجاني</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="alert alert-warning" style="margin: 0;">
+      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" style="flex-shrink: 0;">
+        <path d="M12 9v4M12 17h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span style="font-size: 13px;">التحويلات التي تتجاوز حد وقاء تتطلب تحققاً إضافياً عبر تطبيق وقاء.</span>
+    </div>
+
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function updateLimits(select) {
+  const opt = select.options[select.selectedIndex];
+  const info = document.getElementById('account-info');
+
+  if (!opt.value) { info.style.display = 'none'; return; }
+
+  const balance    = parseFloat(opt.dataset.balance);
+  const dailyLimit = parseFloat(opt.dataset.dailyLimit);
+  const dailySpent = parseFloat(opt.dataset.dailySpent);
+  const singleLmt  = parseFloat(opt.dataset.singleLimit);
+  const currency   = opt.dataset.currency;
+  const remaining  = dailyLimit - dailySpent;
+  const pct        = Math.min((dailySpent / dailyLimit) * 100, 100).toFixed(0);
+
+  document.getElementById('info-balance').textContent = balance.toLocaleString('ar-SA', {minimumFractionDigits: 2}) + ' ' + currency;
+  document.getElementById('info-spent').textContent   = dailySpent.toLocaleString('ar-SA', {minimumFractionDigits: 2}) + ' / ' + dailyLimit.toLocaleString('ar-SA') + ' ' + currency;
+  document.getElementById('info-limit-text').textContent = 'المتبقي اليوم: ' + remaining.toLocaleString('ar-SA', {minimumFractionDigits: 2}) + ' ' + currency;
+  document.getElementById('limit-bar').style.width = pct + '%';
+
+  document.getElementById('side-single-limit').textContent = singleLmt.toLocaleString('ar-SA') + ' ' + currency;
+  document.getElementById('side-daily-limit').textContent  = dailyLimit.toLocaleString('ar-SA') + ' ' + currency;
+
+  info.style.display = 'block';
+}
+</script>
+{% endblock %}

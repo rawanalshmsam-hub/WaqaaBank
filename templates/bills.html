@@ -1,0 +1,153 @@
+{% extends 'base.html' %}
+
+{% block title %}الفواتير — WaqaaBank{% endblock %}
+
+{% block extra_css %}
+.biller-icon {
+  width: 44px; height: 44px;
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px;
+  background: var(--light-blue);
+  flex-shrink: 0;
+}
+.bill-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--border);
+}
+.bill-row:last-child { border-bottom: none; }
+.bill-amount {
+  font-size: 16px;
+  font-weight: 700;
+}
+.bill-amount.pending { color: var(--gold); }
+.bill-amount.paid    { color: var(--teal); }
+.bill-amount.failed  { color: var(--red); }
+
+/* ── Filter tabs ── */
+.filter-tabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 20px;
+}
+.filter-tab {
+  padding: 7px 16px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--white);
+  font-size: 13px;
+  font-weight: 500;
+  font-family: 'Tajawal', sans-serif;
+  cursor: pointer;
+  color: var(--muted);
+  transition: all 0.15s;
+}
+.filter-tab.active, .filter-tab:hover {
+  background: var(--navy);
+  border-color: var(--navy);
+  color: #fff;
+}
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">الفواتير</h1>
+    <p class="page-subtitle">متابعة وسداد فواتيرك</p>
+  </div>
+</div>
+
+{% if bills %}
+  <!-- Filter -->
+  <div class="filter-tabs">
+    <button class="filter-tab active" onclick="filterBills('all', this)">الكل</button>
+    <button class="filter-tab" onclick="filterBills('pending', this)">معلقة</button>
+    <button class="filter-tab" onclick="filterBills('paid', this)">مدفوعة</button>
+    <button class="filter-tab" onclick="filterBills('failed', this)">فاشلة</button>
+  </div>
+
+  <div class="card">
+    <div id="bills-list">
+      {% for bill in bills %}
+        <div class="bill-row" data-status="{{ bill.status }}">
+          <div class="biller-icon">
+            {% if 'كهرب' in bill.biller_name or 'SEC' in bill.biller_name %}⚡
+            {% elif 'ماء' in bill.biller_name or 'NWC' in bill.biller_name %}💧
+            {% elif 'اتصال' in bill.biller_name or 'موبايل' in bill.biller_name or 'STC' in bill.biller_name %}📱
+            {% elif 'إنترنت' in bill.biller_name or 'internet' in bill.biller_name|lower %}🌐
+            {% elif 'إيجار' in bill.biller_name or 'rent' in bill.biller_name|lower %}🏠
+            {% else %}📄{% endif %}
+          </div>
+
+          <div style="flex: 1;">
+            <div class="fw-medium" style="font-size: 14px;">{{ bill.biller_name }}</div>
+            <div style="font-size: 12px; color: var(--muted); margin-top: 2px;">
+              رقم الفاتورة: {{ bill.bill_number }}
+              {% if bill.due_date %}
+                &nbsp;•&nbsp; الاستحقاق: {{ bill.due_date|date:"d/m/Y" }}
+              {% endif %}
+            </div>
+            <div style="font-size: 11px; color: var(--muted);">
+              الحساب: {{ bill.account.account_number }}
+            </div>
+          </div>
+
+          <div style="text-align: left;">
+            <div class="bill-amount {{ bill.status }}">
+              {{ bill.amount|floatformat:2 }} ريال
+            </div>
+            <div style="margin-top: 4px; text-align: left;">
+              <span class="badge
+                {% if bill.status == 'paid' %}badge-success
+                {% elif bill.status == 'pending' %}badge-warning
+                {% elif bill.status == 'failed' %}badge-danger
+                {% else %}badge-info{% endif %}"
+                style="font-size: 11px; padding: 2px 8px;">
+                <span class="badge-dot"></span>
+                {% if bill.status == 'paid' %}مدفوعة
+                {% elif bill.status == 'pending' %}معلقة
+                {% elif bill.status == 'failed' %}فاشلة
+                {% else %}ملغية{% endif %}
+              </span>
+            </div>
+            {% if bill.paid_at %}
+              <div style="font-size: 11px; color: var(--muted); margin-top: 2px; text-align: left;">
+                {{ bill.paid_at|date:"d/m/Y H:i" }}
+              </div>
+            {% endif %}
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+
+{% else %}
+  <div class="card" style="text-align: center; padding: 60px 24px;">
+    <div style="width: 64px; height: 64px; background: #FAEEDA; border-radius: 16px; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px;">
+      <svg width="28" height="28" fill="none" viewBox="0 0 24 24" stroke="#BA7517" stroke-width="1.5">
+        <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2" stroke-linecap="round"/>
+        <rect x="9" y="3" width="6" height="4" rx="1"/>
+        <path d="M9 12h6M9 16h4" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <h3 style="font-size: 17px; font-weight: 700; color: var(--navy); margin-bottom: 8px;">لا توجد فواتير</h3>
+    <p class="text-muted" style="font-size: 14px;">لم يتم تسجيل أي فواتير لحسابك بعد</p>
+  </div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function filterBills(status, btn) {
+  document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+
+  document.querySelectorAll('.bill-row').forEach(row => {
+    row.style.display = (status === 'all' || row.dataset.status === status) ? 'flex' : 'none';
+  });
+}
+</script>
+{% endblock %}

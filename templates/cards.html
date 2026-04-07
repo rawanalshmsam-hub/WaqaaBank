@@ -1,0 +1,218 @@
+{% extends 'base.html' %}
+
+{% block title %}بطاقاتي — WaqaaBank{% endblock %}
+
+{% block extra_css %}
+.bank-card {
+  width: 100%;
+  aspect-ratio: 1.586;
+  border-radius: 16px;
+  padding: 22px 24px;
+  color: #fff;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+.bank-card.debit   { background: linear-gradient(135deg, #042C53 0%, #185FA5 100%); }
+.bank-card.savings { background: linear-gradient(135deg, #085041 0%, #1D9E75 100%); }
+.bank-card.credit  { background: linear-gradient(135deg, #412402 0%, #BA7517 100%); }
+.bank-card.blocked { background: linear-gradient(135deg, #3a3a3a 0%, #666 100%); }
+
+.bank-card::before {
+  content: '';
+  position: absolute;
+  width: 200px; height: 200px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.06);
+  top: -60px; left: -60px;
+}
+.bank-card-chip {
+  width: 32px; height: 24px;
+  border-radius: 4px;
+  background: rgba(239,159,39,0.9);
+}
+.bank-card-logo {
+  font-family: 'Playfair Display', serif;
+  font-size: 15px;
+  font-weight: 700;
+  opacity: 0.9;
+}
+.bank-card-number {
+  font-size: 16px;
+  letter-spacing: 3px;
+  opacity: 0.85;
+  font-weight: 300;
+  direction: ltr;
+  text-align: center;
+}
+.bank-card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+.bank-card-holder {
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  opacity: 0.85;
+}
+.bank-card-exp {
+  font-size: 11px;
+  opacity: 0.6;
+  margin-top: 2px;
+}
+.card-circles {
+  display: flex;
+}
+.circle-l { width: 28px; height: 28px; border-radius: 50%; background: #EF9F27; opacity: 0.9; }
+.circle-r { width: 28px; height: 28px; border-radius: 50%; background: #E24B4A; opacity: 0.8; margin-right: -10px; }
+
+/* ── card details panel ── */
+.card-detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 13px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 14px;
+}
+.card-detail-row:last-child { border-bottom: none; }
+.card-detail-label { color: var(--muted); }
+.card-detail-value { font-weight: 500; color: var(--navy); }
+
+.toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  font-family: 'Tajawal', sans-serif;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  background: var(--white);
+  color: var(--muted);
+}
+.toggle-btn.on  { background: var(--light-teal); border-color: #5DCAA5; color: #085041; }
+.toggle-btn.off { background: var(--bg); }
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">بطاقاتي</h1>
+    <p class="page-subtitle">إدارة بطاقاتك البنكية ومتابعة حدودها</p>
+  </div>
+</div>
+
+{% if cards %}
+  <div class="grid-3" style="align-items: start;">
+    {% for card in cards %}
+      <div>
+        <!-- بطاقة بصرية -->
+        <div class="bank-card
+          {% if card.status == 'blocked' or card.status == 'cancelled' %}blocked
+          {% elif card.card_type == 'credit' %}credit
+          {% elif card.account.account_type == 'savings' %}savings
+          {% else %}debit{% endif %}
+          mb-2">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+            <div class="bank-card-chip"></div>
+            <div class="bank-card-logo">WaqaaBank</div>
+          </div>
+          <div class="bank-card-number">•••• •••• •••• {{ card.last_four }}</div>
+          <div class="bank-card-footer">
+            <div>
+              <div class="bank-card-holder">{{ card.cardholder_name }}</div>
+              <div class="bank-card-exp">{{ card.expiry_date|date:"m/y" }}</div>
+            </div>
+            <div class="card-circles">
+              <div class="circle-l"></div>
+              <div class="circle-r"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- تفاصيل البطاقة -->
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">
+              {% if card.card_type == 'debit' %}بطاقة مدى
+              {% elif card.card_type == 'credit' %}بطاقة ائتمان
+              {% else %}بطاقة مسبقة الدفع{% endif %}
+            </h3>
+            <span class="badge
+              {% if card.status == 'active' %}badge-success
+              {% elif card.status == 'blocked' %}badge-danger
+              {% elif card.status == 'inactive' %}badge-warning
+              {% else %}badge-info{% endif %}">
+              <span class="badge-dot"></span>
+              {% if card.status == 'active' %}نشطة
+              {% elif card.status == 'blocked' %}محظورة
+              {% elif card.status == 'inactive' %}غير نشطة
+              {% elif card.status == 'expired' %}منتهية
+              {% else %}ملغية{% endif %}
+            </span>
+          </div>
+
+          <div class="card-detail-row">
+            <span class="card-detail-label">الحساب المرتبط</span>
+            <span class="card-detail-value" style="font-size: 12px; direction: ltr;">{{ card.account.account_number }}</span>
+          </div>
+          <div class="card-detail-row">
+            <span class="card-detail-label">الحد اليومي</span>
+            <span class="card-detail-value">{{ card.daily_limit|floatformat:0 }} ريال</span>
+          </div>
+          {% if card.credit_limit %}
+          <div class="card-detail-row">
+            <span class="card-detail-label">الحد الائتماني</span>
+            <span class="card-detail-value">{{ card.credit_limit|floatformat:0 }} ريال</span>
+          </div>
+          {% endif %}
+          <div class="card-detail-row">
+            <span class="card-detail-label">الإنترنت</span>
+            <span class="toggle-btn {% if card.is_online_enabled %}on{% else %}off{% endif %}">
+              {% if card.is_online_enabled %}
+                <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                مفعّل
+              {% else %}
+                <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M18 6L6 18M6 6l12 12" stroke-linecap="round"/></svg>
+                معطّل
+              {% endif %}
+            </span>
+          </div>
+          <div class="card-detail-row">
+            <span class="card-detail-label">الدولي</span>
+            <span class="toggle-btn {% if card.is_international %}on{% else %}off{% endif %}">
+              {% if card.is_international %}
+                <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                مفعّل
+              {% else %}
+                <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M18 6L6 18M6 6l12 12" stroke-linecap="round"/></svg>
+                معطّل
+              {% endif %}
+            </span>
+          </div>
+
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+
+{% else %}
+  <div class="card" style="text-align: center; padding: 60px 24px;">
+    <div style="width: 64px; height: 64px; background: var(--light-blue); border-radius: 16px; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px;">
+      <svg width="28" height="28" fill="none" viewBox="0 0 24 24" stroke="#185FA5" stroke-width="1.5">
+        <rect x="2" y="5" width="20" height="14" rx="3"/>
+        <path d="M2 10h20" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <h3 style="font-size: 17px; font-weight: 700; color: var(--navy); margin-bottom: 8px;">لا توجد بطاقات</h3>
+    <p class="text-muted" style="font-size: 14px;">لم يتم إصدار أي بطاقات لحساباتك بعد</p>
+  </div>
+{% endif %}
+{% endblock %}

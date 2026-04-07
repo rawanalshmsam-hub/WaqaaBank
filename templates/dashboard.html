@@ -1,0 +1,267 @@
+{% extends 'base.html' %}
+
+{% block title %}لوحة التحكم — WaqaaBank{% endblock %}
+
+{% block extra_css %}
+.stat-card {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 20px 22px;
+}
+.stat-label {
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 10px;
+}
+.stat-value {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--navy);
+  line-height: 1;
+}
+.stat-currency {
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--muted);
+  margin-right: 4px;
+}
+.stat-icon {
+  width: 40px; height: 40px;
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+}
+.account-card {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 18px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: border-color 0.15s;
+}
+.account-card:hover { border-color: var(--blue); }
+.account-type-icon {
+  width: 42px; height: 42px;
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+}
+.account-number {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 2px;
+  direction: ltr;
+  text-align: right;
+}
+.account-balance { text-align: left; }
+.account-balance-value { font-size: 17px; font-weight: 700; color: var(--navy); }
+.account-balance-curr { font-size: 11px; color: var(--muted); }
+.txn-type-icon {
+  width: 36px; height: 36px;
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">مرحباً، {{ client.full_name }} 👋</h1>
+    <p class="page-subtitle">هذا ملخص حساباتك ومعاملاتك الأخيرة</p>
+  </div>
+  <a href="{% url 'transfer' %}" class="btn btn-primary">
+    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+      <path d="M5 12h14M15 7l5 5-5 5" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    تحويل جديد
+  </a>
+</div>
+
+<!-- Stat Cards -->
+<div class="grid-4 mb-3">
+
+  <div class="stat-card">
+    <div class="flex justify-between items-center mb-1">
+      <span class="stat-label">إجمالي الرصيد</span>
+      <div class="stat-icon" style="background: var(--light-blue);">
+        <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="#185FA5" stroke-width="1.8">
+          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 14.93V18h-2v-1.07C9.39 16.57 8 15.4 8 14h2c0 .83.9 1.5 2 1.5s2-.67 2-1.5c0-.55-.31-1.03-.79-1.29L9.44 11.5C8.56 11.03 8 10.06 8 9c0-1.4 1.39-2.57 3-2.93V5h2v1.07c1.61.36 3 1.53 3 2.93h-2c0-.83-.9-1.5-2-1.5S10 8.17 10 9c0 .55.31 1.03.79 1.29l3.77 1.21C15.44 12 16 12.97 16 14c0 1.4-1.39 2.57-3 2.93z" fill="#185FA5"/>
+        </svg>
+      </div>
+    </div>
+    <div class="stat-value">
+      {{ total_balance|floatformat:2 }}
+      <span class="stat-currency">ريال</span>
+    </div>
+  </div>
+
+  <div class="stat-card">
+    <div class="flex justify-between items-center mb-1">
+      <span class="stat-label">عدد الحسابات</span>
+      <div class="stat-icon" style="background: var(--light-teal);">
+        <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="#1D9E75" stroke-width="1.8">
+          <rect x="2" y="5" width="20" height="14" rx="3"/>
+          <path d="M2 10h20" stroke-linecap="round"/>
+        </svg>
+      </div>
+    </div>
+    <div class="stat-value">{{ accounts|length }}</div>
+  </div>
+
+  <div class="stat-card">
+    <div class="flex justify-between items-center mb-1">
+      <span class="stat-label">آخر دخول</span>
+      <div class="stat-icon" style="background: #FAEEDA;">
+        <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="#BA7517" stroke-width="1.8">
+          <circle cx="12" cy="12" r="10"/>
+          <path d="M12 6v6l4 2" stroke-linecap="round"/>
+        </svg>
+      </div>
+    </div>
+    <div class="stat-value" style="font-size: 14px; font-weight: 500; padding-top: 6px;">
+      {% if client.last_login_at %}
+        {{ client.last_login_at|date:"d/m/Y H:i" }}
+      {% else %}
+        أول مرة
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="stat-card">
+    <div class="flex justify-between items-center mb-1">
+      <span class="stat-label">حالة الحساب</span>
+      <div class="stat-icon" style="background: var(--light-teal);">
+        <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="#1D9E75" stroke-width="1.8">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+    </div>
+    <div class="stat-value" style="padding-top: 6px;">
+      {% if client.kyc_verified %}
+        <span class="badge badge-success"><span class="badge-dot"></span>موثّق</span>
+      {% else %}
+        <span class="badge badge-warning"><span class="badge-dot"></span>قيد التحقق</span>
+      {% endif %}
+    </div>
+  </div>
+
+</div>
+
+<!-- Accounts + Transactions -->
+<div class="grid-2">
+
+  <!-- الحسابات -->
+  <div class="card">
+    <div class="card-header">
+      <h2 class="card-title">حساباتي</h2>
+      <a href="{% url 'cards' %}" class="btn btn-ghost" style="padding: 7px 14px; font-size: 13px;">
+        إدارة البطاقات
+      </a>
+    </div>
+    {% if accounts %}
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        {% for account in accounts %}
+          <div class="account-card">
+            <div class="flex items-center gap-3">
+              <div class="account-type-icon"
+                style="background: {% if account.account_type == 'checking' %}var(--light-blue){% elif account.account_type == 'savings' %}var(--light-teal){% else %}#FAEEDA{% endif %};">
+                <svg width="18" height="18" fill="none" viewBox="0 0 24 24"
+                  stroke="{% if account.account_type == 'checking' %}#185FA5{% elif account.account_type == 'savings' %}#1D9E75{% else %}#BA7517{% endif %}"
+                  stroke-width="1.8">
+                  {% if account.account_type == 'checking' %}
+                    <rect x="2" y="5" width="20" height="14" rx="3"/><path d="M2 10h20"/>
+                  {% elif account.account_type == 'savings' %}
+                    <path d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+                  {% else %}
+                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                  {% endif %}
+                </svg>
+              </div>
+              <div>
+                <div class="fw-medium" style="font-size: 14px;">
+                  {% if account.account_type == 'checking' %}حساب جاري
+                  {% elif account.account_type == 'savings' %}حساب ادخاري
+                  {% else %}حساب استثماري{% endif %}
+                </div>
+                <div class="account-number">{{ account.account_number }}</div>
+              </div>
+            </div>
+            <div class="account-balance">
+              <div class="account-balance-value">{{ account.balance|floatformat:2 }}</div>
+              <div class="account-balance-curr">{{ account.currency }}</div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="text-muted" style="text-align: center; padding: 24px 0; font-size: 14px;">لا توجد حسابات نشطة</p>
+    {% endif %}
+  </div>
+
+  <!-- آخر المعاملات -->
+  <div class="card">
+    <div class="card-header">
+      <h2 class="card-title">آخر المعاملات</h2>
+      <a href="{% url 'transfer' %}" class="btn btn-ghost" style="padding: 7px 14px; font-size: 13px;">
+        تحويل جديد
+      </a>
+    </div>
+    {% if transactions %}
+      <div style="display: flex; flex-direction: column; gap: 2px;">
+        {% for txn in transactions %}
+          <div class="flex items-center justify-between" style="padding: 11px 4px; border-bottom: 1px solid var(--border);">
+            <div class="flex items-center gap-3">
+              <div class="txn-type-icon"
+                style="background: {% if txn.status == 'completed' %}var(--light-teal){% elif txn.status == 'failed' %}var(--light-red){% else %}#FAEEDA{% endif %};">
+                <svg width="16" height="16" fill="none" viewBox="0 0 24 24"
+                  stroke="{% if txn.status == 'completed' %}#1D9E75{% elif txn.status == 'failed' %}#E24B4A{% else %}#BA7517{% endif %}"
+                  stroke-width="2">
+                  {% if txn.transaction_type == 'transfer' %}
+                    <path d="M5 12h14M15 7l5 5-5 5" stroke-linecap="round" stroke-linejoin="round"/>
+                  {% else %}
+                    <path d="M12 5v14M5 12h14" stroke-linecap="round"/>
+                  {% endif %}
+                </svg>
+              </div>
+              <div>
+                <div style="font-size: 13px; font-weight: 500;">
+                  {% if txn.transaction_type == 'transfer' %}تحويل
+                  {% elif txn.transaction_type == 'deposit' %}إيداع
+                  {% elif txn.transaction_type == 'withdrawal' %}سحب
+                  {% else %}دفع فاتورة{% endif %}
+                </div>
+                <div style="font-size: 11px; color: var(--muted);">{{ txn.requested_at|date:"d/m/Y H:i" }}</div>
+              </div>
+            </div>
+            <div style="text-align: left;">
+              <div style="font-size: 14px; font-weight: 700; color: var(--red);">
+                {{ txn.amount|floatformat:2 }}
+                <span style="font-size: 11px; font-weight: 400; color: var(--muted);">{{ txn.currency }}</span>
+              </div>
+              <div>
+                <span class="badge {% if txn.status == 'completed' %}badge-success{% elif txn.status == 'failed' %}badge-danger{% elif txn.status == 'pending' or txn.status == 'processing' %}badge-warning{% else %}badge-info{% endif %}"
+                  style="font-size: 11px; padding: 2px 8px;">
+                  {% if txn.status == 'completed' %}مكتملة
+                  {% elif txn.status == 'failed' %}فاشلة
+                  {% elif txn.status == 'pending' %}معلقة
+                  {% elif txn.status == 'processing' %}جارية
+                  {% elif txn.status == 'requires_verification' %}بانتظار التحقق
+                  {% else %}{{ txn.status }}{% endif %}
+                </span>
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="text-muted" style="text-align: center; padding: 24px 0; font-size: 14px;">لا توجد معاملات بعد</p>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}

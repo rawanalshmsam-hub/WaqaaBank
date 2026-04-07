@@ -1,0 +1,671 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}WaqaaBank{% endblock %}</title>
+
+  {% load static %}
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700&family=Playfair+Display:wght@700&display=swap"
+    rel="stylesheet" />
+
+  <style>
+    /* ═══════════════════════════════════════
+       VARIABLES
+    ═══════════════════════════════════════ */
+    :root {
+      --navy: #042C53;
+      --blue: #185FA5;
+      --light-blue: #E6F1FB;
+      --teal: #1D9E75;
+      --light-teal: #E1F5EE;
+      --gold: #EF9F27;
+      --red: #E24B4A;
+      --light-red: #FCEBEB;
+      --bg: #F5F7FA;
+      --white: #FFFFFF;
+      --border: #E2E8F0;
+      --text: #1A202C;
+      --muted: #718096;
+      --sidebar-w: 240px;
+    }
+
+    /* ═══════════════════════════════════════
+       RESET
+    ═══════════════════════════════════════ */
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Tajawal', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      font-size: 15px;
+      line-height: 1.6;
+    }
+
+    a {
+      text-decoration: none;
+      color: inherit;
+    }
+
+    /* ═══════════════════════════════════════
+       LAYOUT
+    ═══════════════════════════════════════ */
+    .app-layout {
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* ═══════════════════════════════════════
+       SIDEBAR
+    ═══════════════════════════════════════ */
+    .sidebar {
+      width: var(--sidebar-w);
+      background: var(--navy);
+      display: flex;
+      flex-direction: column;
+      position: fixed;
+      top: 0;
+      right: 0;
+      height: 100vh;
+      z-index: 100;
+    }
+
+    .sidebar-logo {
+      padding: 24px 20px 20px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .sidebar-logo-icon {
+      width: 36px;
+      height: 36px;
+      background: var(--teal);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .sidebar-logo-icon svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    .sidebar-logo-name {
+      font-family: 'Playfair Display', serif;
+      font-size: 18px;
+      color: #fff;
+      font-weight: 700;
+    }
+
+    .sidebar-logo-name span {
+      color: var(--teal);
+    }
+
+    .sidebar-nav {
+      flex: 1;
+      padding: 20px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      overflow-y: auto;
+    }
+
+    .nav-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: rgba(255, 255, 255, 0.3);
+      padding: 12px 8px 6px;
+      margin-top: 8px;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      color: rgba(255, 255, 255, 0.6);
+      font-size: 14px;
+      font-weight: 400;
+      transition: all 0.15s;
+      cursor: pointer;
+    }
+
+    .nav-item:hover {
+      background: rgba(255, 255, 255, 0.08);
+      color: #fff;
+    }
+
+    .nav-item.active {
+      background: rgba(29, 158, 117, 0.2);
+      color: #fff;
+      font-weight: 500;
+    }
+
+    .nav-item.active .nav-icon {
+      color: var(--teal);
+    }
+
+    .nav-icon {
+      width: 18px;
+      height: 18px;
+      flex-shrink: 0;
+    }
+
+    .sidebar-footer {
+      padding: 16px 12px;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .user-card {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .user-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: var(--teal);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 700;
+      color: #fff;
+      flex-shrink: 0;
+    }
+
+    .user-name {
+      font-size: 13px;
+      color: #fff;
+      font-weight: 500;
+      flex: 1;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+    }
+
+    .logout-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: rgba(255, 255, 255, 0.4);
+      padding: 4px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      transition: color 0.15s;
+    }
+
+    .logout-btn:hover {
+      color: var(--red);
+    }
+
+    /* ═══════════════════════════════════════
+       MAIN CONTENT
+    ═══════════════════════════════════════ */
+    .main-content {
+      flex: 1;
+      margin-right: var(--sidebar-w);
+      padding: 32px 36px;
+      min-height: 100vh;
+    }
+
+    /* ═══════════════════════════════════════
+       PAGE HEADER
+    ═══════════════════════════════════════ */
+    .page-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 28px;
+    }
+
+    .page-title {
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--navy);
+    }
+
+    .page-subtitle {
+      font-size: 13px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    /* ═══════════════════════════════════════
+       CARDS
+    ═══════════════════════════════════════ */
+    .card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+
+    .card-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--navy);
+    }
+
+    /* ═══════════════════════════════════════
+       BADGES / STATUS
+    ═══════════════════════════════════════ */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .badge-success {
+      background: var(--light-teal);
+      color: #085041;
+    }
+
+    .badge-warning {
+      background: #FAEEDA;
+      color: #633806;
+    }
+
+    .badge-danger {
+      background: var(--light-red);
+      color: #791F1F;
+    }
+
+    .badge-info {
+      background: var(--light-blue);
+      color: #0C447C;
+    }
+
+    .badge-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+
+    /* ═══════════════════════════════════════
+       BUTTONS
+    ═══════════════════════════════════════ */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 10px 20px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 500;
+      font-family: 'Tajawal', sans-serif;
+      cursor: pointer;
+      border: none;
+      transition: all 0.15s;
+    }
+
+    .btn-primary {
+      background: var(--navy);
+      color: #fff;
+    }
+
+    .btn-primary:hover {
+      background: var(--blue);
+    }
+
+    .btn-teal {
+      background: var(--teal);
+      color: #fff;
+    }
+
+    .btn-teal:hover {
+      background: #0F6E56;
+    }
+
+    .btn-ghost {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text);
+    }
+
+    .btn-ghost:hover {
+      background: var(--bg);
+    }
+
+    /* ═══════════════════════════════════════
+       ALERTS
+    ═══════════════════════════════════════ */
+    .alert {
+      padding: 12px 16px;
+      border-radius: 10px;
+      font-size: 14px;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .alert-danger {
+      background: var(--light-red);
+      color: #791F1F;
+      border: 1px solid #F09595;
+    }
+
+    .alert-success {
+      background: var(--light-teal);
+      color: #085041;
+      border: 1px solid #5DCAA5;
+    }
+
+    .alert-warning {
+      background: #FAEEDA;
+      color: #633806;
+      border: 1px solid #FAC775;
+    }
+
+    /* ═══════════════════════════════════════
+       FORMS
+    ═══════════════════════════════════════ */
+    .form-group {
+      margin-bottom: 18px;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--navy);
+      margin-bottom: 7px;
+    }
+
+    .form-control {
+      width: 100%;
+      padding: 11px 14px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-size: 14px;
+      font-family: 'Tajawal', sans-serif;
+      background: var(--white);
+      color: var(--text);
+      transition: border-color 0.15s;
+      outline: none;
+    }
+
+    .form-control:focus {
+      border-color: var(--blue);
+    }
+
+    .form-control::placeholder {
+      color: #A0AEC0;
+    }
+
+    /* ═══════════════════════════════════════
+       TABLES
+    ═══════════════════════════════════════ */
+    .table-wrap {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    thead th {
+      text-align: right;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding: 0 16px 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    tbody tr {
+      border-bottom: 1px solid var(--border);
+    }
+
+    tbody tr:last-child {
+      border-bottom: none;
+    }
+
+    tbody tr:hover {
+      background: #FAFAFA;
+    }
+
+    tbody td {
+      padding: 14px 16px;
+      font-size: 14px;
+      color: var(--text);
+    }
+
+    /* ═══════════════════════════════════════
+       UTILITIES
+    ═══════════════════════════════════════ */
+    .text-muted {
+      color: var(--muted);
+    }
+
+    .text-navy {
+      color: var(--navy);
+    }
+
+    .text-teal {
+      color: var(--teal);
+    }
+
+    .text-red {
+      color: var(--red);
+    }
+
+    .text-gold {
+      color: var(--gold);
+    }
+
+    .fw-bold {
+      font-weight: 700;
+    }
+
+    .fw-medium {
+      font-weight: 500;
+    }
+
+    .mt-1 {
+      margin-top: 8px;
+    }
+
+    .mt-2 {
+      margin-top: 16px;
+    }
+
+    .mt-3 {
+      margin-top: 24px;
+    }
+
+    .mb-1 {
+      margin-bottom: 8px;
+    }
+
+    .mb-2 {
+      margin-bottom: 16px;
+    }
+
+    .mb-3 {
+      margin-bottom: 24px;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+    }
+
+    .grid-4 {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+    }
+
+    .flex {
+      display: flex;
+    }
+
+    .flex-col {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .items-center {
+      align-items: center;
+    }
+
+    .justify-between {
+      justify-content: space-between;
+    }
+
+    .gap-2 {
+      gap: 8px;
+    }
+
+    .gap-3 {
+      gap: 12px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="app-layout">
+
+    <!-- ══════════════════════════════════
+         SIDEBAR
+    ══════════════════════════════════ -->
+    {% if request.session.client_id %}
+    <aside class="sidebar">
+
+      <div class="sidebar-logo">
+        <div class="sidebar-logo-icon">
+          <svg viewBox="0 0 24 24" fill="none">
+            <path d="M3 9L12 4L21 9V10H3V9Z" fill="white" />
+            <rect x="5" y="11" width="3" height="7" fill="white" opacity="0.7" />
+            <rect x="10.5" y="11" width="3" height="7" fill="white" opacity="0.7" />
+            <rect x="16" y="11" width="3" height="7" fill="white" opacity="0.7" />
+            <rect x="3" y="18" width="18" height="2" fill="white" />
+          </svg>
+        </div>
+        <span class="sidebar-logo-name">Waqaa<span>Bank</span></span>
+      </div>
+
+      <nav class="sidebar-nav">
+        <span class="nav-label">القائمة الرئيسية</span>
+
+        <a href="{% url 'dashboard' %}"
+          class="nav-item {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+          <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+            <rect x="3" y="3" width="7" height="7" rx="1.5" />
+            <rect x="14" y="3" width="7" height="7" rx="1.5" />
+            <rect x="3" y="14" width="7" height="7" rx="1.5" />
+            <rect x="14" y="14" width="7" height="7" rx="1.5" />
+          </svg>
+          لوحة التحكم
+        </a>
+
+        <a href="{% url 'transfer' %}"
+          class="nav-item {% if request.resolver_match.url_name == 'transfer' %}active{% endif %}">
+          <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+            <path d="M5 12h14M15 7l5 5-5 5" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+          تحويل الأموال
+        </a>
+
+        <a href="{% url 'cards' %}"
+          class="nav-item {% if request.resolver_match.url_name == 'cards' %}active{% endif %}">
+          <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+            <rect x="2" y="5" width="20" height="14" rx="3" />
+            <path d="M2 10h20" stroke-linecap="round" />
+          </svg>
+          بطاقاتي
+        </a>
+
+        <a href="{% url 'bills' %}"
+          class="nav-item {% if request.resolver_match.url_name == 'bills' %}active{% endif %}">
+          <svg class="nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+            <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2" stroke-linecap="round" />
+            <rect x="9" y="3" width="6" height="4" rx="1" />
+            <path d="M9 12h6M9 16h4" stroke-linecap="round" />
+          </svg>
+          الفواتير
+        </a>
+
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="user-card">
+          <div class="user-avatar">
+            {{ request.session.client_name|first|default:"؟" }}
+          </div>
+          <span class="user-name">{{ request.session.client_name }}</span>
+          <a href="{% url 'logout' %}" class="logout-btn" title="تسجيل الخروج">
+            <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h6a2 2 0 012 2v1"
+                stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </a>
+        </div>
+      </div>
+
+    </aside>
+    {% endif %}
+
+    <!-- ══════════════════════════════════
+         MAIN CONTENT
+    ══════════════════════════════════ -->
+    <main class="main-content" {% if not request.session.client_id %}style="margin-right: 0;" {% endif %}>
+      {% block content %}{% endblock %}
+    </main>
+
+  </div>
+
+  {% block extra_js %}{% endblock %}
+</body>
+
+</html>

@@ -1,0 +1,227 @@
+{% extends 'base.html' %}
+
+{% block title %}التحقق من وقاء — WaqaaBank{% endblock %}
+
+{% block extra_css %}
+.verify-page {
+  max-width: 520px;
+  margin: 0 auto;
+}
+.verify-card {
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 40px;
+  text-align: center;
+}
+
+/* ── Spinner ── */
+.spinner-wrap {
+  display: flex;
+  justify-content: center;
+  margin: 28px 0;
+}
+.spinner {
+  width: 72px; height: 72px;
+  border-radius: 50%;
+  border: 4px solid var(--light-blue);
+  border-top-color: var(--blue);
+  animation: spin 0.9s linear infinite;
+}
+.spinner-success {
+  width: 72px; height: 72px;
+  border-radius: 50%;
+  background: var(--light-teal);
+  display: flex; align-items: center; justify-content: center;
+  display: none;
+}
+.spinner-fail {
+  width: 72px; height: 72px;
+  border-radius: 50%;
+  background: var(--light-red);
+  display: flex; align-items: center; justify-content: center;
+  display: none;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.verify-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--navy);
+  margin-bottom: 8px;
+}
+.verify-sub {
+  font-size: 14px;
+  color: var(--muted);
+  line-height: 1.7;
+  margin-bottom: 28px;
+}
+.txn-summary {
+  background: var(--bg);
+  border-radius: 14px;
+  padding: 16px 20px;
+  text-align: right;
+  margin-bottom: 28px;
+}
+.txn-amount-big {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--navy);
+  direction: ltr;
+  display: block;
+  text-align: center;
+}
+.txn-ref {
+  font-size: 12px;
+  color: var(--muted);
+  text-align: center;
+  margin-top: 4px;
+  direction: ltr;
+}
+
+/* ── Timer ── */
+.timer-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--muted);
+  margin-top: 20px;
+}
+.timer-value { font-weight: 700; color: var(--navy); }
+.timer-value.urgent { color: var(--red); }
+
+.cancel-btn {
+  margin-top: 16px;
+  background: none;
+  border: none;
+  font-size: 13px;
+  color: var(--muted);
+  cursor: pointer;
+  text-decoration: underline;
+  font-family: 'Tajawal', sans-serif;
+}
+.cancel-btn:hover { color: var(--red); }
+{% endblock %}
+
+{% block content %}
+<div class="verify-page">
+
+  <div class="page-header" style="justify-content: center; margin-bottom: 24px;">
+    <div style="text-align: center;">
+      <h1 class="page-title">التحقق من وقاء</h1>
+      <p class="page-subtitle">افتح تطبيق وقاء وأكّد العملية</p>
+    </div>
+  </div>
+
+  <div class="verify-card" id="verify-card">
+
+    <div class="spinner-wrap">
+      <div class="spinner" id="spinner"></div>
+      <div class="spinner-success" id="spinner-success">
+        <svg width="36" height="36" fill="none" viewBox="0 0 24 24" stroke="#1D9E75" stroke-width="2.5">
+          <path d="M20 6L9 17l-5-5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div class="spinner-fail" id="spinner-fail">
+        <svg width="36" height="36" fill="none" viewBox="0 0 24 24" stroke="#E24B4A" stroke-width="2.5">
+          <path d="M18 6L6 18M6 6l12 12" stroke-linecap="round"/>
+        </svg>
+      </div>
+    </div>
+
+    <h2 class="verify-title" id="status-title">في انتظار التحقق</h2>
+    <p class="verify-sub" id="status-sub">
+      تم إرسال طلب التحقق إلى تطبيق وقاء.
+      افتح التطبيق وأكّد العملية خلال الوقت المحدد.
+    </p>
+
+    <div class="txn-summary">
+      <span class="txn-amount-big">{{ txn.amount|floatformat:2 }} {{ txn.currency }}</span>
+      <div class="txn-ref">{{ txn.reference_number }}</div>
+    </div>
+
+    <div class="timer-wrap" id="timer-wrap">
+      <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/>
+        <path d="M12 6v6l4 2" stroke-linecap="round"/>
+      </svg>
+      ينتهي خلال
+      <span class="timer-value" id="timer-val">10:00</span>
+    </div>
+
+    <br/>
+    <button class="cancel-btn" onclick="window.location='{% url 'dashboard' %}'">
+      إلغاء العملية
+    </button>
+
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const STATUS_URL = "{% url 'transfer_status' txn_id=txn.id %}";
+const DASHBOARD_URL = "{% url 'dashboard' %}";
+
+const expiresAt = new Date("{{ txn.expires_at|date:'c' }}");
+
+let polling = null;
+let timerInterval = null;
+
+function updateTimer() {
+  const remaining = Math.max(0, Math.floor((expiresAt - Date.now()) / 1000));
+  const mins = Math.floor(remaining / 60);
+  const secs = remaining % 60;
+  const el = document.getElementById('timer-val');
+  el.textContent = String(mins).padStart(2, '0') + ':' + String(secs).padStart(2, '0');
+  if (remaining <= 60) el.classList.add('urgent');
+  if (remaining === 0) clearInterval(timerInterval);
+}
+
+function setSuccess() {
+  clearInterval(polling);
+  clearInterval(timerInterval);
+  document.getElementById('spinner').style.display = 'none';
+  document.getElementById('spinner-success').style.display = 'flex';
+  document.getElementById('status-title').textContent = 'تم التحقق بنجاح ✓';
+  document.getElementById('status-sub').textContent = 'تمت العملية بنجاح. سيتم توجيهك للوحة التحكم...';
+  document.getElementById('timer-wrap').style.display = 'none';
+  document.getElementById('verify-card').style.borderColor = '#5DCAA5';
+  setTimeout(() => { window.location = DASHBOARD_URL; }, 2200);
+}
+
+function setFailed(reason) {
+  clearInterval(polling);
+  clearInterval(timerInterval);
+  document.getElementById('spinner').style.display = 'none';
+  document.getElementById('spinner-fail').style.display = 'flex';
+  document.getElementById('status-title').textContent = 'فشلت العملية';
+  document.getElementById('status-sub').textContent = reason === 'expired'
+    ? 'انتهت مهلة التحقق. يرجى إعادة المحاولة.'
+    : 'تم رفض العملية أو فشل التحقق. يرجى المحاولة مجدداً.';
+  document.getElementById('timer-wrap').style.display = 'none';
+  document.getElementById('verify-card').style.borderColor = '#F09595';
+}
+
+async function checkStatus() {
+  try {
+    const res = await fetch(STATUS_URL);
+    const data = await res.json();
+
+    if (data.status === 'verified') { setSuccess(); return; }
+    if (data.status === 'failed')   { setFailed('failed'); return; }
+    if (data.status === 'expired')  { setFailed('expired'); return; }
+  } catch (e) {
+    console.error('polling error', e);
+  }
+}
+
+updateTimer();
+timerInterval = setInterval(updateTimer, 1000);
+polling = setInterval(checkStatus, 3000);
+checkStatus();
+</script>
+{% endblock %}
