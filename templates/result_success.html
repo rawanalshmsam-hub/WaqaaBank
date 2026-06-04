@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+
+{% block title %}تم التحويل بنجاح{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <div>
+        <h1 class="page-title">تم تنفيذ التحويل</h1>
+        <p class="page-subtitle">تمت العملية بنجاح</p>
+    </div>
+</div>
+
+<div class="card" style="max-width:700px; margin:auto;">
+
+    <div style="text-align:center; padding:20px 0 30px;">
+
+        <div style="
+            width:80px;
+            height:80px;
+            margin:auto;
+            border-radius:50%;
+            background:#E1F5EE;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            margin-bottom:20px;
+        ">
+            <svg width="42" height="42" fill="none" viewBox="0 0 24 24"
+                 stroke="#1D9E75" stroke-width="2.5">
+                <path d="M5 13l4 4L19 7"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"/>
+            </svg>
+        </div>
+
+        <h2 class="text-teal fw-bold" style="font-size:28px;">
+            تم التحويل بنجاح
+        </h2>
+
+        <p class="text-muted mt-1">
+            تم تنفيذ العملية وإضافة المبلغ إلى الحساب المستلم
+        </p>
+    </div>
+
+    <div class="grid-2">
+
+        <div class="card" style="padding:16px;">
+            <div class="text-muted">المبلغ</div>
+            <div class="fw-bold mt-1">
+                {{ txn.amount }} ريال
+            </div>
+        </div>
+
+        <div class="card" style="padding:16px;">
+            <div class="text-muted">الرقم المرجعي</div>
+            <div class="fw-bold mt-1">
+                {{ txn.reference_number }}
+            </div>
+        </div>
+
+        <div class="card" style="padding:16px;">
+            <div class="text-muted">الحساب المستلم</div>
+            <div class="fw-bold mt-1">
+                {{ txn.to_account.account_number }}
+            </div>
+        </div>
+
+        <div class="card" style="padding:16px;">
+            <div class="text-muted">الحالة</div>
+            <span class="badge badge-success mt-1">
+                <span class="badge-dot"></span>
+                مكتملة
+            </span>
+        </div>
+
+    </div>
+
+    <div style="
+        display:flex;
+        justify-content:center;
+        gap:12px;
+        margin-top:30px;
+    ">
+        <a href="{% url 'transfer' %}" class="btn btn-primary">
+            تحويل جديد
+        </a>
+
+        <a href="{% url 'dashboard' %}" class="btn btn-ghost">
+            العودة للرئيسية
+        </a>
+    </div>
+
+</div>
+
+{% endblock %}

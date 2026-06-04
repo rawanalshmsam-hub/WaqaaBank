@@ -11,14 +11,15 @@ from .views.transfer_views import (
     transfer_view,
     verify_view,
     transfer_status,
+    result_success,
 )
 
 # cards
 from .views.cards_views import cards_view
 
 from .views.bills_views import bills_view   
-
-
+from .views.register_view import register_view
+from .views.link_views import link_waqaa_view
 urlpatterns = [
 
 
@@ -43,6 +44,15 @@ urlpatterns = [
      path('cards/', cards_view, name='cards'), 
     
     path('bills/', bills_view, name='bills'),  
+    path(
+    'transfer/success/<uuid:txn_id>/',
+    result_success,
+    name='result_success'
+),
+
+
+path('register/', register_view, name='register'),
+path('link-waqaa/', link_waqaa_view, name='link_waqaa'),
     
 
 ]

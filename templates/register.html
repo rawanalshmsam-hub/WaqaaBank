@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+<h2>إنشاء حساب جديد</h2>
+
+{% if error %}
+<p style="color:red;">
+    {{ error }}
+</p>
+{% endif %}
+
+<form method="POST">
+
+    {% csrf_token %}
+
+    <input
+        type="text"
+        name="full_name"
+        placeholder="الاسم الكامل"
+        required
+    >
+
+    <input
+        type="text"
+        name="national_id"
+        placeholder="رقم الهوية"
+        required
+    >
+
+    <input
+        type="text"
+        name="phone"
+        placeholder="رقم الجوال"
+        required
+    >
+
+    <input
+        type="email"
+        name="email"
+        placeholder="البريد الإلكتروني"
+    >
+
+    <input
+        type="text"
+        name="username"
+        placeholder="اسم المستخدم"
+        required
+    >
+
+    <input
+        type="password"
+        name="password"
+        placeholder="كلمة المرور"
+        required
+    >
+
+    <button type="submit">
+        إنشاء الحساب
+    </button>
+
+</form>
+
+{% endblock %}

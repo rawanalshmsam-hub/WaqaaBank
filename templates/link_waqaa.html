@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+
+{% block title %}ربط حساب وقاء — WaqaaBank{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div>
+    <h1 class="page-title">ربط حساب وقاء 🔗</h1>
+    <p class="page-subtitle">أدخل رقم الهوية المسجّل في وقاء لربط حسابك</p>
+  </div>
+</div>
+
+<div class="card" style="max-width: 500px; margin: 0 auto;">
+
+  {% if error %}
+    <div class="alert alert-danger" style="background: var(--light-red); color: var(--red); padding: 12px 16px; border-radius: 10px; margin-bottom: 16px;">
+      {{ error }}
+    </div>
+  {% endif %}
+
+  {% if success %}
+    <div class="alert alert-success" style="background: var(--light-teal); color: #1D9E75; padding: 12px 16px; border-radius: 10px; margin-bottom: 16px;">
+      ✅ تم ربط حسابك بنجاح! يمكنك الآن إجراء عمليات تتطلّب التحقّق.
+    </div>
+    <a href="{% url 'dashboard' %}" class="btn btn-primary" style="width: 100%; justify-content: center;">
+      العودة للوحة التحكم
+    </a>
+  {% else %}
+
+    <form method="POST" action="{% url 'link_waqaa' %}">
+      {% csrf_token %}
+
+      <div style="margin-bottom: 18px;">
+        <label style="display: block; font-size: 14px; font-weight: 600; margin-bottom: 8px; color: var(--navy);">
+          رقم الهوية الوطنية
+        </label>
+        <input
+          type="text"
+          name="national_id"
+          placeholder="١٠٠٠٠٠٠٠٠٠"
+          required
+          minlength="10"
+          maxlength="10"
+          pattern="[0-9]{10}"
+          class="form-input"
+          style="width: 100%; padding: 12px 14px; border: 1px solid var(--border); border-radius: 10px; font-size: 14px; direction: ltr; text-align: right;"
+        />
+        <p style="font-size: 12px; color: var(--muted); margin-top: 6px;">
+          نفس الرقم الذي استخدمته عند التسجيل في وقاء
+        </p>
+      </div>
+
+      <div style="display: flex; gap: 10px;">
+        <button type="submit" class="btn btn-primary" style="flex: 1; justify-content: center;">
+          ربط الحساب
+        </button>
+        <a href="{% url 'dashboard' %}" class="btn btn-secondary" style="justify-content: center;">
+          إلغاء
+        </a>
+      </div>
+    </form>
+
+    <div style="margin-top: 24px; padding-top: 18px; border-top: 1px solid var(--border); font-size: 12px; color: var(--muted); line-height: 1.7;">
+      <strong style="color: var(--navy);">ملاحظة:</strong>
+      الربط مطلوب مرة واحدة. بعد الربط، ستتم العمليات الكبيرة (فوق 1000 ريال) عبر التحقّق من وقاء تلقائياً.
+    </div>
+
+  {% endif %}
+
+</div>
+{% endblock %}

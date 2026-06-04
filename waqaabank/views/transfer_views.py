@@ -1,6 +1,7 @@
 import uuid
 from decimal import Decimal, InvalidOperation
 from datetime import timedelta
+import traceback
 
 from django.shortcuts import render, redirect
 from django.utils import timezone
@@ -10,9 +11,6 @@ from django.db import transaction
 from ..models import Client, Account, Transaction
 
 from ..services.waqaa_client import WaqaaClient
-
-from ..utils.hash_utils import hash_phone
-
 from .auth_views import get_client_ip, log_audit
 
 
@@ -189,14 +187,18 @@ def transfer_view(request):
     requires_waqaa = amount >= from_account.waqaa_threshold
 
     reference_number = f"TXN-{uuid.uuid4().hex[:10].upper()}"
-    idempotency_key = f"{client.id}:{from_account.id}:{to_account.id}:{amount}:{timezone.now().date()}"
-
+    idempotency_key = str(uuid.uuid4())
     existing_txn = Transaction.objects.filter(
         idempotency_key=idempotency_key,
-        status__in=['pending', 'requires_verification', 'processing', 'completed']
+        status__in=['pending', 'requires_verification', 'processing', 'completed',
+        'failed',
+        ]
     ).first()
+    
 
     if existing_txn:
+        if existing_txn.status == 'failed':
+          existing_txn.delete()
         if existing_txn.requires_waqaa and existing_txn.status in ['requires_verification', 'processing']:
             return redirect('verify', txn_id=existing_txn.id)
 
@@ -247,10 +249,29 @@ def transfer_view(request):
             })
 
         try:
+            # Build operation hash (binds the call to specific transfer data,
+            # so an attacker cannot replay a stolen session for a different transfer)
+            op_hash = WaqaaClient.build_operation_hash(
+                amount=amount,
+                from_account=from_account.account_number,
+                to_account=to_account_number,
+                txn_id=str(txn.id),
+            )
+
+            # Build the display payload the mobile app will show to the user
+            op_payload = WaqaaClient.build_operation_payload(
+                amount=amount,
+                from_account=from_account.account_number,
+                to_account=to_account_number,
+                description=description,
+            )
+
             waqaa_response = WaqaaClient.create_session(
                 external_user_ref=str(client.waqaa_user_id),
                 org_operation_ref=str(txn.id),
                 operation_type='transfer',
+                operation_hash=op_hash,
+                operation_payload=op_payload,
             )
 
             txn.waqaa_session_id = waqaa_response['session_id']
@@ -259,12 +280,15 @@ def transfer_view(request):
 
             return redirect('verify', txn_id=txn.id)
 
-        except Exception:
+        except Exception as exc:
+            print(f"\n❌❌❌ WAQAA ERROR: {exc}")
+            print(traceback.format_exc())
+            print()
             txn.status = 'failed'
-            txn.failure_reason = 'waqaa_session_creation_failed'
+            txn.failure_reason = f'waqaa_session_creation_failed: {exc}'[:500]
             txn.failed_at = timezone.now()
             txn.save(update_fields=['status', 'failure_reason', 'failed_at'])
-
+    
             log_audit(
                 client.id,
                 'transfer_create',
@@ -346,6 +370,10 @@ def transfer_view(request):
         return redirect('result_success', txn_id=txn.id)
 
     except Exception:
+        print(type(e))
+        print(str(e))
+        print(traceback.format_exc())
+
         txn.status = 'failed'
         txn.failure_reason = 'execution_failed'
         txn.failed_at = timezone.now()
@@ -538,3 +566,86 @@ def transfer_status(request, txn_id):
             'status': 'error',
             'message': 'waqaa_status_check_failed'
         }, status=500)
+    
+def result_success(request, txn_id):
+    client = _get_logged_in_client(request)
+
+    if not client:
+        return redirect('login')
+
+    try:
+        txn = Transaction.objects.get(
+            id=txn_id,
+            from_account__client=client
+        )
+    except Transaction.DoesNotExist:
+        return redirect('dashboard')
+
+    return render(request, 'result_success.html', {
+        'client': client,
+        'txn': txn,
+    })
+    """
+PATCH for transfer_views.py
+
+Find the BROKEN block in waqaabank/views/transfer_views.py:
+================================================================
+        try:
+            waqaa_response = WaqaaClient.create_session(
+                external_user_ref=str(client.waqaa_user_id),
+                org_operation_ref=str(txn.id),
+                operation_type='transfer',
+                challenge=hash_transaction_data,  # ← MISSING!
+                amount=amount,
+                to_account=to_account_number,
+            )
+================================================================
+
+REPLACE it with this corrected block:
+================================================================
+
+        try:
+            # Build operation hash (binds the call to specific transfer data,
+            # so an attacker cannot replay a stolen session for a different transfer)
+            op_hash = WaqaaClient.build_operation_hash(
+                amount=amount,
+                from_account=from_account.account_number,
+                to_account=to_account_number,
+                txn_id=str(txn.id),
+            )
+
+            # Build the display payload the mobile app will show to the user
+            op_payload = WaqaaClient.build_operation_payload(
+                amount=amount,
+                from_account=from_account.account_number,
+                to_account=to_account_number,
+                description=description,
+            )
+
+            waqaa_response = WaqaaClient.create_session(
+                external_user_ref=str(client.waqaa_user_id),
+                org_operation_ref=str(txn.id),
+                operation_type='transfer',
+                operation_hash=op_hash,
+                operation_payload=op_payload,
+            )
+
+            txn.waqaa_session_id = waqaa_response['session_id']
+            txn.waqaa_status = 'pending'
+            txn.save(update_fields=['waqaa_session_id', 'waqaa_status'])
+
+            return redirect('verify', txn_id=txn.id)
+
+================================================================
+
+That's the only change to transfer_views.py. Everything else stays the same.
+
+
+Also REMOVE this import line if it's there (it was the bug):
+================================================================
+from ..utils.hash_utils import hash_phone    # ← unused
+================================================================
+
+(If hash_phone is used elsewhere, keep the import but understand it's not
+related to our waqaa integration.)
+"""
