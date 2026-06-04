@@ -267,7 +267,7 @@ def transfer_view(request):
             )
 
             waqaa_response = WaqaaClient.create_session(
-                external_user_ref=str(client.waqaa_user_id),
+                external_user_ref=str(client.id),
                 org_operation_ref=str(txn.id),
                 operation_type='transfer',
                 operation_hash=op_hash,
